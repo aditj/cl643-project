@@ -1,0 +1,27 @@
+B 3 C o m p i l a t i o n
+B 84 Equation Listing    SOLVE ddp Using MINLP From line 71
+D 87 cost
+D 92 single_drone
+D 101 visit_once
+D 110 timetaken
+D 117 opposewind
+D 128 preferredtimeslot
+B 138 Column Listing      SOLVE ddp Using MINLP From line 71
+E 141 z
+E 148 v
+E 173 alpha
+E 192 x
+E 208 y
+B 236 Model Statistics    SOLVE ddp Using MINLP From line 71
+B 250 Solution Report     SOLVE ddp Using MINLP From line 71
+F 318 cost
+F 322 single_drone
+F 330 visit_once
+F 338 timetaken
+F 345 opposewind
+F 356 preferredtimeslot
+G 366 z
+G 370 v
+G 381 alpha
+G 392 x
+G 403 y

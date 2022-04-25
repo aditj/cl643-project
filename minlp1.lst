@@ -1,0 +1,431 @@
+GAMS 38.1.0  a1a3b545 Jan 31, 2022          LEX-LEG x86 64bit/Linux - 04/21/22 22:02:47 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  Sets
+   2      i drones /D1, D2/
+   3      j deliveries /L1,L2,L3/
+   4      k timeslots /T1,T2/;
+   5  Scalar delta 'time in a timeslot' / 4 /;
+   6  Scalar vlow 'lower bound on the speed achieved by the drone' / 10 /;
+   7  Scalar vhigh 'upper bound on the speed achieved by the drone' / 40 /;
+   8   
+   9  Parameters
+  10      d(j) delivery in ms
+  11      / L1 20
+  12        L2 10
+  13        L3 30 /
+  14      tau(j) preferred time slot
+  15      / L1 1
+  16        L2 2
+  17        L3 1 /
+  18      ti(k) time slot index
+  19      /
+  20          T1 1
+  21          T2 2
+  22      /
+  23      w(j) delivery weights
+  24      / L1 2
+  25        L2 5
+  26        L3 4 /
+  27      ;
+  28  Table wx(j,k) wind in direction of path in location j at timeslot k
+  29          T1 T2
+  30      L1  2  5
+  31      L2  6  2
+  32      L3  5  1;
+  33  Table wy(j,k) wind perpendicular to direction of path in location j at timeslot k
+  34          T1 T2
+  35      L1  2  1
+  36      L2  3  4
+  37      L3  1  2;
+  38  Variable
+  39          z  total power consumed;
+  40   
+  41  Positive Variables
+  42   
+  43      v(j,k) i speed used  for delivery j at timeslot k
+  44      alpha(j,k) Drone i direction for delivery j at timeslot k
+  45      t(j,k) time taken to deliver j at time t;
+  46  Binary Variable
+  47      x(i,j) Drone i makes delivery to Location j
+  48      y(j,k) Location j is delivered in Timeslot k ;
+  49  Equations
+  50      cost define objective function
+  51      single_drone(j) ensuring only a single drone visits one
+  52      visit_once(j) ensuring each location is visited once
+  53      timetaken(k) the time taken or delivering in a single slot should be less than the slot size
+  54      opposewind(j,k) oppose wind speed
+  55      preferredtimeslot(j,k) constraint for checking preffered time slot
+  56     ;
+  57  v.up(j,k) = vhigh;
+  58  v.lo(j,k) = vlow;
+  59  alpha.up(j,k) = 6.28;
+  60  alpha.lo(j,k) = 0.0;
+  61  cost.. z =e= sum((j,k),((y(j,k)*v(j,k))**2)*w(j));
+  62  opposewind(j,k).. v(j,k)*sin(alpha(j,k))=e=wy(j,k)*(y(j,k));
+  63  single_drone(j).. sum(i,x(i,j)) =e= 1;
+  64  ** add x(i,j) consistency for time taken
+  65  visit_once(j).. sum(k,y(j,k)) =e= 1;
+  66  timetaken(k).. sum(j,y(j,k)*d(j)/(v(j,k)*cos(alpha(j,k))+wx(j,k))) =l=  delta;
+  67  preferredtimeslot(j,k).. (ti(k)-tau(j))*y(j,k) =e= 0;
+  68  ** correct preferred timeslot     preferredtimeslot(j) ensuring that deliveries get made in
+  69   
+  70  Model ddp / all /;
+  71  solve ddp using minlp minimizing z;
+  72   
+  73   
+
+
+COMPILATION TIME     =        0.002 SECONDS      3 MB  38.1.0 a1a3b545 LEX-LEG
+GAMS 38.1.0  a1a3b545 Jan 31, 2022          LEX-LEG x86 64bit/Linux - 04/21/22 22:02:47 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE ddp Using MINLP From line 71
+
+
+---- cost  =E=  define objective function
+
+cost..  z + (0)*v(L1,T1) + (0)*v(L1,T2) + (0)*v(L2,T1) + (0)*v(L2,T2) + (0)*v(L3,T1) + (0)*v(L3,T2) + (0)*y(L1,T1) + (0)*y(L1,T2) + (0)*y(L2,T1) + (0)*y(L2,T2) + (0)*y(L3,T1) + (0)*y(L3,T2) =E= 0 ; (LHS = 0)
+     
+
+---- single_drone  =E=  ensuring only a single drone visits one
+
+single_drone(L1)..  x(D1,L1) + x(D2,L1) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+single_drone(L2)..  x(D1,L2) + x(D2,L2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+single_drone(L3)..  x(D1,L3) + x(D2,L3) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+
+---- visit_once  =E=  ensuring each location is visited once
+
+visit_once(L1)..  y(L1,T1) + y(L1,T2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+visit_once(L2)..  y(L2,T1) + y(L2,T2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+visit_once(L3)..  y(L3,T1) + y(L3,T2) =E= 1 ; (LHS = 0, INFES = 1 ****)
+     
+
+---- timetaken  =L=  the time taken or delivering in a single slot should be less than the slot size
+
+timetaken(T1)..  (0)*v(L1,T1) + (0)*v(L2,T1) + (0)*v(L3,T1) + (0)*alpha(L1,T1) + (0)*alpha(L2,T1) + (0)*alpha(L3,T1) + (1.66666666666667)*y(L1,T1) + (0.625)*y(L2,T1) + (2)*y(L3,T1) =L= 4 ; (LHS = 0)
+     
+timetaken(T2)..  (0)*v(L1,T2) + (0)*v(L2,T2) + (0)*v(L3,T2) + (0)*alpha(L1,T2) + (0)*alpha(L2,T2) + (0)*alpha(L3,T2) + (1.33333333333333)*y(L1,T2) + (0.833333333333333)*y(L2,T2) + (2.72727272727273)*y(L3,T2) =L= 4 ; (LHS = 0)
+     
+
+---- opposewind  =E=  oppose wind speed
+
+opposewind(L1,T1)..  (0)*v(L1,T1) + (10)*alpha(L1,T1) - 2*y(L1,T1) =E= 0 ; (LHS = 0)
+     
+opposewind(L1,T2)..  (0)*v(L1,T2) + (10)*alpha(L1,T2) - y(L1,T2) =E= 0 ; (LHS = 0)
+     
+opposewind(L2,T1)..  (0)*v(L2,T1) + (10)*alpha(L2,T1) - 3*y(L2,T1) =E= 0 ; (LHS = 0)
+     
+REMAINING 3 ENTRIES SKIPPED
+
+
+---- preferredtimeslot  =E=  constraint for checking preffered time slot
+
+preferredtimeslot(L1,T2)..  y(L1,T2) =E= 0 ; (LHS = 0)
+     
+preferredtimeslot(L2,T1)..  - y(L2,T1) =E= 0 ; (LHS = 0)
+     
+preferredtimeslot(L3,T2)..  y(L3,T2) =E= 0 ; (LHS = 0)
+     
+GAMS 38.1.0  a1a3b545 Jan 31, 2022          LEX-LEG x86 64bit/Linux - 04/21/22 22:02:47 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE ddp Using MINLP From line 71
+
+
+---- z  total power consumed
+
+z
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+        1       cost
+
+
+---- v  i speed used  for delivery j at timeslot k
+
+v(L1,T1)
+                (.LO, .L, .UP, .M = 10, 10, 40, 0)
+       (0)      cost
+       (0)      timetaken(T1)
+       (0)      opposewind(L1,T1)
+        0       (OLD LEVEL ****)
+
+v(L1,T2)
+                (.LO, .L, .UP, .M = 10, 10, 40, 0)
+       (0)      cost
+       (0)      timetaken(T2)
+       (0)      opposewind(L1,T2)
+        0       (OLD LEVEL ****)
+
+v(L2,T1)
+                (.LO, .L, .UP, .M = 10, 10, 40, 0)
+       (0)      cost
+       (0)      timetaken(T1)
+       (0)      opposewind(L2,T1)
+        0       (OLD LEVEL ****)
+
+REMAINING 3 ENTRIES SKIPPED
+
+---- alpha  Drone i direction for delivery j at timeslot k
+
+alpha(L1,T1)
+                (.LO, .L, .UP, .M = 0, 0, 6.28, 0)
+       (0)      timetaken(T1)
+      (10)      opposewind(L1,T1)
+
+alpha(L1,T2)
+                (.LO, .L, .UP, .M = 0, 0, 6.28, 0)
+       (0)      timetaken(T2)
+      (10)      opposewind(L1,T2)
+
+alpha(L2,T1)
+                (.LO, .L, .UP, .M = 0, 0, 6.28, 0)
+       (0)      timetaken(T1)
+      (10)      opposewind(L2,T1)
+
+REMAINING 3 ENTRIES SKIPPED
+
+---- x  Drone i makes delivery to Location j
+
+x(D1,L1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       single_drone(L1)
+
+x(D1,L2)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       single_drone(L2)
+
+x(D1,L3)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+        1       single_drone(L3)
+
+REMAINING 3 ENTRIES SKIPPED
+
+---- y  Location j is delivered in Timeslot k
+
+y(L1,T1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+       (0)      cost
+        1       visit_once(L1)
+       (1.6667) timetaken(T1)
+       -2       opposewind(L1,T1)
+
+y(L1,T2)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+       (0)      cost
+        1       visit_once(L1)
+       (1.3333) timetaken(T2)
+       -1       opposewind(L1,T2)
+        1       preferredtimeslot(L1,T2)
+
+y(L2,T1)
+                (.LO, .L, .UP, .M = 0, 0, 1, 0)
+       (0)      cost
+        1       visit_once(L2)
+       (0.625)  timetaken(T1)
+       -3       opposewind(L2,T1)
+       -1       preferredtimeslot(L2,T1)
+
+REMAINING 3 ENTRIES SKIPPED
+GAMS 38.1.0  a1a3b545 Jan 31, 2022          LEX-LEG x86 64bit/Linux - 04/21/22 22:02:47 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE ddp Using MINLP From line 71
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           6     SINGLE EQUATIONS           18
+BLOCKS OF VARIABLES           5     SINGLE VARIABLES           25  6 projected
+NON ZERO ELEMENTS            64     NON LINEAR N-Z             42
+CODE LENGTH                 113     CONSTANT POOL              19     DISCRETE VARIABLES         12
+
+
+GENERATION TIME      =        0.007 SECONDS      4 MB  38.1.0 a1a3b545 LEX-LEG
+GAMS 38.1.0  a1a3b545 Jan 31, 2022          LEX-LEG x86 64bit/Linux - 04/21/22 22:02:47 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE ddp Using MINLP From line 71
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   ddp                 OBJECTIVE  z
+     TYPE    MINLP               DIRECTION  MINIMIZE
+     SOLVER  DICOPT              FROM LINE  71
+
+**** SOLVER STATUS     1 Normal Completion
+**** MODEL STATUS      2 Locally Optimal
+**** OBJECTIVE VALUE             1100.0000
+
+ RESOURCE USAGE, LIMIT          0.009 10000000000.000
+ ITERATION COUNT, LIMIT         3    2147483647
+ EVALUATION ERRORS              0             0
+-------------------------------------------------------------------------------
+Dicopt 2         38.1.0 a1a3b545 Jan 31, 2022          LEG x86 64bit/Linux    
+-------------------------------------------------------------------------------
+by Aldo Vecchietti, Director del Instituto INGAR,
+   CONICET, UTN, Santa Fe, Argentina
+by Ignacio E. Grossmann, Chemical Engineering Faculty,
+   Carnegie Mellon University, Pittsburgh, PA, USA
+-------------------------------------------------------------------------------
+*** This solver runs with a demo license. No commercial use.
+--- *** This solver runs with a demo license. No commercial use.
+ 
+ 
+    C O N O P T 3   version 3.17K
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ 
+    The model has 25 variables and 18 constraints
+    with 64 Jacobian elements, 42 of which are nonlinear.
+    The Hessian of the Lagrangian has 18 elements on the diagonal,
+    18 elements below the diagonal, and 18 nonlinear variables.
+ 
+ ** Warning **  The value of LFITER is out of range.
+                LFITER is decreased from 2147483647 to 1000000000.
+ 
+ ** Warning **  The number of nonlinear derivatives equal to zero
+                in the initial point is large (= 46 percent).
+                A better initial point will probably help the
+                optimization.
+ 
+ 
+                   Pre-triangular equations:   6
+                   Post-triangular equations:  4
+ 
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.002 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+ 
+--- DICOPT: Relaxed NLP gives integer solution
+
+      The Relaxed NLP gave a solution where all the integer
+      variables have integral values. There is no need to
+      to continue the search.
+
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU cost                .              .              .             1.0000      
+
+  cost  define objective function
+
+---- EQU single_drone  ensuring only a single drone visits one
+
+          LOWER          LEVEL          UPPER         MARGINAL
+
+L1         1.0000         1.0000         1.0000         EPS         
+L2         1.0000         1.0000         1.0000         EPS         
+L3         1.0000         1.0000         1.0000         EPS         
+
+---- EQU visit_once  ensuring each location is visited once
+
+          LOWER          LEVEL          UPPER         MARGINAL
+
+L1         1.0000         1.0000         1.0000       400.0000      
+L2         1.0000         1.0000         1.0000      1000.0000      
+L3         1.0000         1.0000         1.0000       800.0000      
+
+---- EQU timetaken  the time taken or delivering in a single slot should be less than the slot size
+
+          LOWER          LEVEL          UPPER         MARGINAL
+
+T1        -INF            3.7019         4.0000          .          
+T2        -INF            0.8956         4.0000          .          
+
+---- EQU opposewind  oppose wind speed
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+L1.T1          .              .              .             EPS         
+L1.T2          .              .              .             EPS         
+L2.T1          .              .              .             EPS         
+L2.T2          .              .              .             EPS         
+L3.T1          .              .              .             EPS         
+L3.T2          .              .              .             EPS         
+
+---- EQU preferredtimeslot  constraint for checking preffered time slot
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+L1.T2          .              .              .          -400.0000      
+L2.T1          .              .              .          1000.0000      
+L3.T2          .              .              .          -800.0000      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR z                 -INF         1100.0000        +INF             .          
+
+  z  total power consumed
+
+---- VAR v  i speed used  for delivery j at timeslot k
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+L1.T1        10.0000        10.0000        40.0000        40.0000      
+L1.T2        10.0000        10.0000        40.0000         EPS         
+L2.T1        10.0000        10.0000        40.0000         EPS         
+L2.T2        10.0000        10.0000        40.0000       100.0000      
+L3.T1        10.0000        10.0000        40.0000        80.0000      
+L3.T2        10.0000        10.0000        40.0000         EPS         
+
+---- VAR alpha  Drone i direction for delivery j at timeslot k
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+L1.T1          .             0.2014         6.2800          .          
+L1.T2          .              .             6.2800          .          
+L2.T1          .              .             6.2800          .          
+L2.T2          .             0.4115         6.2800          .          
+L3.T1          .             0.1002         6.2800          .          
+L3.T2          .              .             6.2800          .          
+
+---- VAR x  Drone i makes delivery to Location j
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+D1.L1          .             1.0000         1.0000         EPS         
+D1.L2          .             1.0000         1.0000         EPS         
+D1.L3          .             1.0000         1.0000         EPS         
+D2.L1          .              .             1.0000         EPS         
+D2.L2          .              .             1.0000         EPS         
+D2.L3          .              .             1.0000         EPS         
+
+---- VAR y  Location j is delivered in Timeslot k
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+L1.T1          .             1.0000         1.0000         EPS         
+L1.T2          .              .             1.0000         EPS         
+L2.T1          .              .             1.0000         EPS         
+L2.T2          .             1.0000         1.0000         EPS         
+L3.T1          .             1.0000         1.0000         EPS         
+L3.T2          .              .             1.0000         EPS         
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+
+
+EXECUTION TIME       =        0.040 SECONDS      4 MB  38.1.0 a1a3b545 LEX-LEG
+
+
+USER: GAMS Demo license for Adit Jain                G220203|0002CO-GEN
+      Adit Jain, India                                         DL059391
+
+
+**** FILE SUMMARY
+
+Input      /home/adit/Downloads/clproject/minlp1.gms
+Output     /home/adit/Downloads/clproject/minlp1.lst
